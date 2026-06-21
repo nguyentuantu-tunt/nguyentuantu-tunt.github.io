@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Who Is The Prompt Master? — Cẩm Nang Dùng AI Hiệu Quả</title>
+<style>
+  :root{
+    --paper:#0d1117;
+    --panel:#11161d;
+    --line:#22303d;
+    --ink:#dce6ee;
+    --ink-dim:#8b9aa8;
+    --signal:#5eead4;
+    --signal-dim:#1a3d38;
+    --warn:#f0a868;
+    --err:#ef6f6f;
+    --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --display: 'Fraunces', Georgia, serif;
+    --body: 'Inter', -apple-system, sans-serif;
+  }
+
+  @font-face{
+    font-family:'Fraunces'; src:local('Georgia');
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--body);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* Subtle terminal-grid background */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:48px 48px;
+    opacity:0.05;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .wrap{max-width:880px; margin:0 auto; padding:0 24px; position:relative; z-index:1;}
+
+  /* ---------- TOP BAR ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    background:rgba(13,17,23,0.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar-inner{
+    max-width:880px; margin:0 auto; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between;
+    font-family:var(--mono); font-size:13px; color:var(--ink-dim);
+  }
+  .topbar .dot{color:var(--signal);}
+  .topbar nav{display:flex; gap:18px;}
+  .topbar nav a{color:var(--ink-dim); text-decoration:none; transition:color .15s;}
+  .topbar nav a:hover{color:var(--signal);}
+
+  /* ---------- HERO ---------- */
+  .hero{padding:96px 0 64px; position:relative;}
+  .hero .kicker{
+    font-family:var(--mono); font-size:13px; color:var(--signal);
+    letter-spacing:.06em; margin-bottom:18px; display:flex; gap:10px; align-items:center;
+  }
+  .hero .kicker::before{content:"$"; opacity:.7;}
+  .hero h1{
+    font-family:var(--display); font-weight:600; font-style:italic;
+    font-size:clamp(40px,7vw,72px); line-height:1.04; margin:0 0 24px;
+    letter-spacing:-0.01em;
+  }
+  .hero h1 .who{color:var(--ink-dim); font-style:normal; font-size:0.5em; display:block; font-family:var(--mono); letter-spacing:.04em; margin-bottom:10px; font-weight:500;}
+  .hero p.lede{
+    font-size:18px; color:var(--ink-dim); max-width:560px; margin:0 0 36px;
+  }
+  .hero .tags{display:flex; gap:10px; flex-wrap:wrap;}
+  .tag{
+    font-family:var(--mono); font-size:12px; padding:6px 12px;
+    border:1px solid var(--line); border-radius:100px; color:var(--ink-dim);
+  }
+
+  /* ---------- TERMINAL HERO PROMPT ---------- */
+  .terminal{
+    margin-top:48px; border:1px solid var(--line); border-radius:10px;
+    background:var(--panel); overflow:hidden;
+    box-shadow:0 20px 60px -20px rgba(94,234,212,0.08);
+  }
+  .terminal-head{
+    display:flex; align-items:center; gap:8px; padding:12px 16px;
+    border-bottom:1px solid var(--line); background:#0b0f14;
+  }
+  .terminal-head .c{width:10px; height:10px; border-radius:50%; background:#3a4452;}
+  .terminal-head span{margin-left:8px; font-family:var(--mono); font-size:12px; color:var(--ink-dim);}
+  .terminal-body{padding:22px 20px; font-family:var(--mono); font-size:14px;}
+  .terminal-body .line{margin-bottom:10px; color:var(--ink-dim);}
+  .terminal-body .line .prompt-char{color:var(--signal); margin-right:8px;}
+  .terminal-body .bad{color:var(--err);}
+  .terminal-body .good{color:var(--signal);}
+  .typed-cursor{display:inline-block; width:7px; height:15px; background:var(--signal); margin-left:4px; animation:blink 1s steps(1) infinite; vertical-align:middle;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* ---------- SECTION GENERIC ---------- */
+  section{padding:80px 0; border-top:1px solid var(--line); position:relative;}
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; color:var(--signal);
+    letter-spacing:.08em; margin-bottom:14px; text-transform:uppercase;
+  }
+  h2{
+    font-family:var(--display); font-style:italic; font-weight:600;
+    font-size:clamp(28px,4vw,40px); margin:0 0 16px; line-height:1.15; color:var(--ink);
+  }
+  .section-intro{color:var(--ink-dim); max-width:600px; margin-bottom:48px; font-size:16px;}
+
+  /* ---------- SESSION NAV ---------- */
+  #map{padding-top:56px;}
+  .session-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .session-card{background:var(--panel); padding:22px 18px; text-decoration:none; color:var(--ink); transition:background .2s;}
+  .session-card:hover{background:#161d26;}
+  .session-card .num{font-family:var(--mono); color:var(--signal-dim); font-size:28px; font-weight:700; -webkit-text-stroke:1px var(--signal); color:transparent;}
+  .session-card .name{font-weight:600; margin:10px 0 4px; font-size:15px;}
+  .session-card .desc{font-size:12.5px; color:var(--ink-dim); line-height:1.5;}
+  @media(max-width:760px){.session-grid{grid-template-columns:1fr 1fr;}}
+
+  /* ---------- STAT STRIP ---------- */
+  .stats{display:grid; grid-template-columns:repeat(3,1fr); gap:24px; margin-top:8px;}
+  .stat{border-left:2px solid var(--err); padding-left:18px;}
+  .stat .num{font-family:var(--mono); font-size:34px; font-weight:700; color:var(--ink);}
+  .stat .label{font-size:13px; color:var(--ink-dim); margin-top:6px; line-height:1.5;}
+  @media(max-width:760px){.stats{grid-template-columns:1fr;}}
+
+  /* ---------- COMPARE TABLE (AI vs human writing) ---------- */
+  .compare{border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .compare-row{display:grid; grid-template-columns:120px 1fr 1fr; border-top:1px solid var(--line);}
+  .compare-row:first-child{border-top:none;}
+  .compare-row.head{background:#0b0f14; font-family:var(--mono); font-size:12px; color:var(--ink-dim); letter-spacing:.04em; text-transform:uppercase;}
+  .compare-cell{padding:16px 18px; font-size:14px;}
+  .compare-cell.label{font-family:var(--mono); font-size:12.5px; color:var(--ink-dim); display:flex; align-items:center;}
+  .compare-row:not(.head) .compare-cell:nth-child(2){border-right:1px solid var(--line); color:var(--ink-dim);}
+  .compare-row:not(.head) .compare-cell:nth-child(3){color:var(--ink);}
+  @media(max-width:700px){
+    .compare-row{grid-template-columns:1fr;}
+    .compare-row:not(.head) .compare-cell:nth-child(2){border-right:none; border-bottom:1px solid var(--line);}
+    .compare-cell.label{padding-bottom:0;}
+  }
+
+  /* ---------- C.A.R.E CONSOLE (signature interactive element) ---------- */
+  .care-console{
+    border:1px solid var(--line); border-radius:12px; background:var(--panel);
+    overflow:hidden;
+  }
+  .care-tabs{display:flex; border-bottom:1px solid var(--line); overflow-x:auto;}
+  .care-tab{
+    flex:1; min-width:90px; padding:16px 10px; text-align:center; cursor:pointer;
+    font-family:var(--mono); font-size:13px; color:var(--ink-dim);
+    border-right:1px solid var(--line); background:transparent; border-top:none; border-bottom:none; border-left:none;
+    transition:background .15s, color .15s;
+  }
+  .care-tab:last-child{border-right:none;}
+  .care-tab.active{background:var(--signal-dim); color:var(--signal); font-weight:600;}
+  .care-tab .letter{display:block; font-size:20px; margin-bottom:4px;}
+  .care-panel{padding:28px; display:none;}
+  .care-panel.active{display:block;}
+  .care-panel h3{margin:0 0 10px; font-size:18px; font-family:var(--body); font-weight:700; color:var(--ink);}
+  .care-panel p{color:var(--ink-dim); margin:0 0 16px; font-size:14.5px;}
+  .care-panel .ex{
+    font-family:var(--mono); font-size:13px; background:#0b0f14; border:1px solid var(--line);
+    border-radius:8px; padding:14px 16px; color:var(--signal); line-height:1.7;
+  }
+  .care-input{
+    width:100%; margin-top:14px; padding:12px 14px; background:#0b0f14; border:1px solid var(--line);
+    border-radius:8px; color:var(--ink); font-family:var(--mono); font-size:13px; resize:vertical; min-height:48px;
+  }
+  .care-input:focus{outline:2px solid var(--signal); outline-offset:1px; border-color:transparent;}
+  .care-input::placeholder{color:var(--ink-dim); opacity:.6;}
+
+  .care-build{padding:24px 28px; border-top:1px solid var(--line); background:#0b0f14;}
+  .care-build .build-label{font-family:var(--mono); font-size:12px; color:var(--ink-dim); margin-bottom:10px; letter-spacing:.04em;}
+  .care-build .build-out{
+    font-family:var(--mono); font-size:13.5px; color:var(--ink); line-height:1.8;
+    min-height:70px; white-space:pre-wrap;
+  }
+  .care-build .build-out .ph{color:var(--ink-dim); font-style:italic;}
+  .care-build .build-out .filled{color:var(--signal);}
+
+  /* ---------- BAD vs GOOD prompt example ---------- */
+  .vs{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media(max-width:700px){.vs{grid-template-columns:1fr;}}
+  .vs-card{border-radius:10px; padding:20px; border:1px solid var(--line); background:var(--panel);}
+  .vs-card.bad{border-color:rgba(239,111,111,0.35);}
+  .vs-card.good{border-color:rgba(94,234,212,0.35);}
+  .vs-card .tag2{font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px; display:inline-block;}
+  .vs-card.bad .tag2{color:var(--err);}
+  .vs-card.good .tag2{color:var(--signal);}
+  .vs-card p{margin:0; font-size:14.5px; color:var(--ink);}
+
+  /* ---------- HALLUCINATION CARDS ---------- */
+  .errcards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media(max-width:760px){.errcards{grid-template-columns:1fr;}}
+  .errcard{border:1px solid var(--line); border-radius:10px; padding:22px; background:var(--panel);}
+  .errcard .icon{font-family:var(--mono); font-size:22px; color:var(--warn); margin-bottom:12px; display:block;}
+  .errcard h4{margin:0 0 8px; font-size:15px; color:var(--ink);}
+  .errcard p{margin:0; font-size:13.5px; color:var(--ink-dim);}
+
+  .technique-list{display:flex; flex-direction:column; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .technique{background:var(--panel); padding:20px 22px; display:grid; grid-template-columns:200px 1fr; gap:20px; align-items:start;}
+  @media(max-width:700px){.technique{grid-template-columns:1fr; gap:8px;}}
+  .technique .t-name{font-weight:700; font-size:14.5px;}
+  .technique .t-desc{color:var(--ink-dim); font-size:13.5px; margin:4px 0 0;}
+  .technique .t-quote{font-family:var(--mono); font-size:13px; color:var(--signal); background:#0b0f14; padding:10px 14px; border-radius:6px; border:1px solid var(--line);}
+
+  /* ---------- ETHICS ACCORDION ---------- */
+  .qa{border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .qa-item{border-top:1px solid var(--line);}
+  .qa-item:first-child{border-top:none;}
+  .qa-q{
+    width:100%; text-align:left; background:var(--panel); border:none; color:var(--ink);
+    padding:18px 20px; font-size:14.5px; font-weight:600; cursor:pointer;
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    font-family:var(--body);
+  }
+  .qa-q .arrow{font-family:var(--mono); color:var(--signal); transition:transform .2s; flex-shrink:0;}
+  .qa-q[aria-expanded="true"] .arrow{transform:rotate(45deg);}
+  .qa-a{max-height:0; overflow:hidden; transition:max-height .25s ease; background:#0b0f14;}
+  .qa-a-inner{padding:0 20px 18px; color:var(--ink-dim); font-size:14px; line-height:1.7;}
+
+  /* ---------- TOOLBOX (4 use cases) ---------- */
+  .toolbox{display:grid; grid-template-columns:repeat(2,1fr); gap:16px;}
+  @media(max-width:700px){.toolbox{grid-template-columns:1fr;}}
+  .toolcard{border:1px solid var(--line); border-radius:10px; padding:22px; background:var(--panel);}
+  .toolcard h4{margin:0 0 10px; font-size:15.5px; display:flex; align-items:center; gap:10px;}
+  .toolcard h4 .glyph{font-family:var(--mono); color:var(--signal); font-size:14px;}
+  .toolcard p{margin:0; font-size:13.5px; color:var(--ink-dim); line-height:1.6;}
+  .toolcard .ex2{margin-top:12px; font-family:var(--mono); font-size:12.5px; color:var(--ink); background:#0b0f14; padding:10px 12px; border-radius:6px; border:1px solid var(--line);}
+
+  /* ---------- CLOSING ---------- */
+  .closing{text-align:center; padding:100px 0 80px;}
+  .closing blockquote{
+    font-family:var(--display); font-style:italic; font-weight:600;
+    font-size:clamp(22px,3.6vw,32px); color:var(--ink); max-width:680px; margin:0 auto 28px; line-height:1.4;
+  }
+  .closing .credit{font-family:var(--mono); font-size:13px; color:var(--ink-dim);}
+
+  footer{border-top:1px solid var(--line); padding:32px 0; text-align:center; font-family:var(--mono); font-size:12px; color:var(--ink-dim);}
+
+  ::selection{background:var(--signal); color:#0d1117;}
+
+  a.skip-link{position:absolute; left:-9999px;}
+  a.skip-link:focus{left:8px; top:8px; background:var(--panel); padding:8px; border-radius:6px; z-index:200;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<a href="#main" class="skip-link">Bỏ qua đến nội dung</a>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div><span class="dot">●</span> who-is-the-prompt-master</div>
+    <nav>
+      <a href="#map">Lộ trình</a>
+      <a href="#care">C.A.R.E</a>
+      <a href="#verify">Kiểm chứng</a>
+      <a href="#ethics">Đạo đức</a>
+      <a href="#apply">Ứng dụng</a>
+    </nav>
+  </div>
+</div>
+
+<main id="main">
+
+  <!-- HERO -->
+  <section class="hero" style="border-top:none; padding-top:80px;">
+    <div class="wrap">
+      <div class="kicker">SSA101 · Nhóm 6 Bông Hoa<span class="typed-cursor"></span></div>
+      <h1>
+        <span class="who">Who is the</span>
+        Prompt Master?
+      </h1>
+      <p class="lede">Cẩm nang gõ tay từ khóa học kỹ năng dùng AI trong học tập — để bạn ra lệnh cho AI, thay vì để AI ra lệnh cho bạn.</p>
+      <div class="tags">
+        <span class="tag">Đặt nền móng</span>
+        <span class="tag">Công thức C.A.R.E</span>
+        <span class="tag">Phản biện &amp; kiểm chứng</span>
+        <span class="tag">Workshop thực hành</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-head">
+          <div class="c" style="background:#ef6f6f;"></div>
+          <div class="c" style="background:#f0a868;"></div>
+          <div class="c" style="background:#5eead4;"></div>
+          <span>prompt — bash</span>
+        </div>
+        <div class="terminal-body">
+          <div class="line"><span class="prompt-char">$</span> ai tóm tắt cho tôi bài này</div>
+          <div class="line bad">&gt; lỗi: prompt quá chung chung. AI đoán ý bạn, kết quả hên xui.</div>
+          <div class="line" style="margin-top:18px;"><span class="prompt-char">$</span> ai --vai-trò="gia sư" --định-dạng="5 ý, mỗi ý 1-2 câu" --ngôn-ngữ="dễ hiểu cho SV năm 1"</div>
+          <div class="line good">&gt; đã hiểu. đang tạo bản tóm tắt phù hợp với bạn...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SESSION MAP -->
+  <section id="map">
+    <div class="wrap">
+      <div class="eyebrow">Lộ trình 4 buổi</div>
+      <h2>Từ nhận thức đến làm chủ</h2>
+      <p class="section-intro">Mỗi buổi học giải quyết một câu hỏi cụ thể trên hành trình trở thành Prompt Master.</p>
+      <div class="session-grid">
+        <a class="session-card" href="#stakes">
+          <div class="num">01</div>
+          <div class="name">Đặt nền móng</div>
+          <div class="desc">AI đang thống trị bạn, hay bạn thống trị AI?</div>
+        </a>
+        <a class="session-card" href="#care">
+          <div class="num">02</div>
+          <div class="name">Prompt thông minh</div>
+          <div class="desc">Công thức C.A.R.E để viết prompt có chất lượng.</div>
+        </a>
+        <a class="session-card" href="#verify">
+          <div class="num">03</div>
+          <div class="name">Phản biện &amp; kiểm chứng</div>
+          <div class="desc">AI có thể nói dối bạn — học cách bắt lỗi.</div>
+        </a>
+        <a class="session-card" href="#apply">
+          <div class="num">04</div>
+          <div class="name">AI Workshop</div>
+          <div class="desc">Ứng dụng thực tế, tạo ra sản phẩm học tập.</div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SESSION 1: STAKES -->
+  <section id="stakes">
+    <div class="wrap">
+      <div class="eyebrow">Buổi 1 · Đặt nền móng</div>
+      <h2>Cái giá của việc lạm dụng AI</h2>
+      <p class="section-intro">Trước khi học cách dùng AI tốt hơn, cần thấy rõ điều gì đang mất đi khi dùng AI sai cách.</p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="num">&lt;10%</div>
+          <div class="label">trường đại học và tổ chức giáo dục toàn cầu có quy định chính thức về dùng AI tạo sinh.</div>
+        </div>
+        <div class="stat">
+          <div class="num">-11% đến -15%</div>
+          <div class="label">điểm số trung bình trong bài kiểm tra đột xuất, do "ủy thác nhận thức" cho AI.</div>
+        </div>
+        <div class="stat">
+          <div class="num">Human Agency ↓</div>
+          <div class="label">lạm dụng AI làm suy giảm khả năng tự phân tích, tổng hợp, đánh giá của người học.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:56px;">
+        <div class="eyebrow">Văn AI viết, hay người viết?</div>
+        <h2 style="font-size:26px;">Nhận diện sự khác biệt</h2>
+        <div class="compare" style="margin-top:24px;">
+          <div class="compare-row head">
+            <div class="compare-cell label">Đặc điểm</div>
+            <div class="compare-cell">Do AI viết</div>
+            <div class="compare-cell">Do người viết</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell label">Mở bài</div>
+            <div class="compare-cell">Trang trọng, chung chung</div>
+            <div class="compare-cell">Tự nhiên, gần lời nói</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell label">Từ vựng</div>
+            <div class="compare-cell">"đóng vai trò quan trọng", "nâng cao hiệu quả"</div>
+            <div class="compare-cell">"than bận", "chưa kể", "dùng nhiều quá"</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell label">Cấu trúc</div>
+            <div class="compare-cell">Rất đều, rất chuẩn</div>
+            <div class="compare-cell">Linh hoạt, có chỗ đời thường</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell label">Cảm xúc</div>
+            <div class="compare-cell">Trung tính, an toàn</div>
+            <div class="compare-cell">Có quan sát cá nhân</div>
+          </div>
+          <div class="compare-row">
+            <div class="compare-cell label">Lỗi / độ thô</div>
+            <div class="compare-cell">Ít lỗi, trơn tru</div>
+            <div class="compare-cell">Chưa hoàn hảo, nhưng thật hơn</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SESSION 2: CARE -->
+  <section id="care">
+    <div class="wrap">
+      <div class="eyebrow">Buổi 2 · Prompt thông minh</div>
+      <h2>Công thức C.A.R.E</h2>
+      <p class="section-intro">Bốn thành phần biến một prompt "tệ" thành một prompt "tốt". Bấm vào từng chữ để xem cách áp dụng, rồi thử ghép prompt của riêng bạn ở dưới.</p>
+
+      <div class="care-console">
+        <div class="care-tabs" role="tablist">
+          <button class="care-tab active" data-tab="c" role="tab"><span class="letter">C</span>Context</button>
+          <button class="care-tab" data-tab="a" role="tab"><span class="letter">A</span>Action</button>
+          <button class="care-tab" data-tab="r" role="tab"><span class="letter">R</span>Result</button>
+          <button class="care-tab" data-tab="e" role="tab"><span class="letter">E</span>Example</button>
+        </div>
+
+        <div class="care-panel active" data-panel="c">
+          <h3>Context — Ngữ cảnh</h3>
+          <p>Thiết lập vai trò và bối cảnh của người hỏi, để AI hiểu bạn đang ở vị trí nào.</p>
+          <div class="ex">"Tôi là sinh viên năm nhất ngành Kinh tế..."</div>
+          <textarea class="care-input" data-field="context" placeholder="Viết phần Context của bạn, ví dụ: Tôi là sinh viên năm 2 ngành Marketing..."></textarea>
+        </div>
+        <div class="care-panel" data-panel="a">
+          <h3>Action — Hành động</h3>
+          <p>Dùng động từ mệnh lệnh rõ ràng, nói chính xác bạn muốn AI làm gì.</p>
+          <div class="ex">"Hãy tóm tắt và giải thích dưới dạng…"</div>
+          <textarea class="care-input" data-field="action" placeholder="Viết phần Action, ví dụ: Hãy giải thích khái niệm này như..."></textarea>
+        </div>
+        <div class="care-panel" data-panel="r">
+          <h3>Result — Kết quả trình bày</h3>
+          <p>Định dạng kết quả mong muốn: số lượng ý, độ dài, hình thức trình bày.</p>
+          <div class="ex">"Trả lời dưới dạng đơn giản, tối đa 3 ý…"</div>
+          <textarea class="care-input" data-field="result" placeholder="Viết phần Result, ví dụ: Trình bày dưới dạng bullet, tối đa 5 ý..."></textarea>
+        </div>
+        <div class="care-panel" data-panel="e">
+          <h3>Example — Ví dụ</h3>
+          <p>Cung cấp khuôn mẫu mong muốn để AI bám theo đúng hướng.</p>
+          <div class="ex">"Ví dụ như: GDP bao gồm..."</div>
+          <textarea class="care-input" data-field="example" placeholder="Viết phần Example, ví dụ: Ví dụ minh hoạ bằng một tình huống ở Việt Nam..."></textarea>
+        </div>
+
+        <div class="care-build">
+          <div class="build-label">// PROMPT CỦA BẠN, GHÉP TỪ 4 PHẦN TRÊN</div>
+          <div class="build-out" id="careOutput">
+            <span class="ph">Điền vào các ô Context / Action / Result / Example phía trên — prompt hoàn chỉnh sẽ hiện ra ở đây.</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:40px;">
+        <div class="vs">
+          <div class="vs-card bad">
+            <span class="tag2">Prompt tệ</span>
+            <p>"Tóm tắt bài GDP kinh tế vĩ mô"</p>
+          </div>
+          <div class="vs-card good">
+            <span class="tag2">Prompt tốt</span>
+            <p>"Tôi là sinh viên năm 1 ngành kinh tế vừa học xong bài GDP kinh tế vĩ mô. Hãy tóm tắt 3 điểm quan trọng nhất theo dạng bullet point với vai trò là một gia sư, mỗi điểm có 1 ví dụ thực tế ở Việt Nam."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SESSION 3: VERIFY -->
+  <section id="verify">
+    <div class="wrap">
+      <div class="eyebrow">Buổi 3 · Phản biện kiểm chứng</div>
+      <h2>AI có thể nói dối bạn</h2>
+      <p class="section-intro">AI hoạt động dựa trên dự đoán mẫu từ ngữ, không thực sự "biết" đúng/sai. Kết quả: thông tin sai lệch, nhưng với giọng văn rất thuyết phục.</p>
+
+      <div class="errcards">
+        <div class="errcard">
+          <span class="icon">⊘</span>
+          <h4>Nguồn tài liệu không tồn tại</h4>
+          <p>AI bịa ra tên sách, bài báo, hoặc nghiên cứu nghe rất thật nhưng chưa từng xuất bản.</p>
+        </div>
+        <div class="errcard">
+          <span class="icon">#</span>
+          <h4>Số liệu sai</h4>
+          <p>Phần trăm, ngày tháng, con số thống kê bị bóp méo hoặc tự nghĩ ra.</p>
+        </div>
+        <div class="errcard">
+          <span class="icon">!</span>
+          <h4>Sự kiện bịa đặt</h4>
+          <p>Mô tả những việc chưa từng xảy ra như thể đó là sự thật lịch sử.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:48px;">
+        <div class="eyebrow">3 kỹ thuật kiểm chứng</div>
+        <div class="technique-list" style="margin-top:20px;">
+          <div class="technique">
+            <div>
+              <div class="t-name">Yêu cầu tự phản biện</div>
+              <div class="t-desc">Kích hoạt cơ chế tự kiểm tra của AI.</div>
+            </div>
+            <div class="t-quote">"Có điểm nào trong câu trả lời của bạn có thể không chính xác không?"</div>
+          </div>
+          <div class="technique">
+            <div>
+              <div class="t-name">Yêu cầu trích dẫn</div>
+              <div class="t-desc">Buộc AI cung cấp tài liệu tham khảo cụ thể.</div>
+            </div>
+            <div class="t-quote">"Hãy trích nguồn cụ thể cho từng thông tin bạn đưa ra."</div>
+          </div>
+          <div class="technique">
+            <div>
+              <div class="t-name">Cross-check</div>
+              <div class="t-desc">Phát hiện mâu thuẫn bằng cách so sánh nhiều nguồn.</div>
+            </div>
+            <div class="t-quote">Dùng 2 AI khác nhau hỏi cùng câu hỏi, so sánh kết quả.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ETHICS -->
+  <section id="ethics">
+    <div class="wrap">
+      <div class="eyebrow">Buổi 3 · Đạo đức học tập</div>
+      <h2>Những câu hỏi không có câu trả lời dễ</h2>
+      <p class="section-intro">Ranh giới giữa "dùng AI hỗ trợ" và "đạo văn" thường không rõ ràng. Đây là cách tiếp cận từng tình huống.</p>
+
+      <div class="qa" id="qaList">
+        <div class="qa-item">
+          <button class="qa-q" aria-expanded="false">
+            <span>"Tôi dùng AI viết 80% bài luận, tôi chỉ sửa lại. Đây có phải đạo văn không?"</span>
+            <span class="arrow">+</span>
+          </button>
+          <div class="qa-a">
+            <div class="qa-a-inner">Khi phần lớn nội dung và lập luận đến từ AI, công sửa lại không thay đổi việc bài luận không còn phản ánh tư duy và năng lực thật của bạn. Đây là vùng rủi ro cao về đạo đức học thuật, vì người chấm điểm đang đánh giá năng lực của AI, không phải của bạn.</div>
+          </div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q" aria-expanded="false">
+            <span>"Tôi dùng AI để học bài, không copy nguyên văn. Vậy có sao không?"</span>
+            <span class="arrow">+</span>
+          </button>
+          <div class="qa-a">
+            <div class="qa-a-inner">Dùng AI để giải thích, ôn tập, hoặc kiểm tra hiểu bài là cách dùng lành mạnh — miễn là bạn vẫn là người xử lý và ghi nhớ kiến thức. Rủi ro xuất hiện khi việc "học bằng AI" dần thay thế hoàn toàn việc tự đọc, tự suy nghĩ.</div>
+          </div>
+        </div>
+        <div class="qa-item">
+          <button class="qa-q" aria-expanded="false">
+            <span>"Trường chưa có quy định rõ về AI, vậy dùng AI làm bài hoàn toàn có được không?"</span>
+            <span class="arrow">+</span>
+          </button>
+          <div class="qa-a">
+            <div class="qa-a-inner">Thiếu quy định không đồng nghĩa với việc mọi cách dùng đều ổn. Nguyên tắc chung: người học cần suy nghĩ phản biện, kiểm chứng thông tin, và dùng AI một cách trung thực, có trách nhiệm — kể cả khi không có văn bản nào bắt buộc điều đó.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- APPLY -->
+  <section id="apply">
+    <div class="wrap">
+      <div class="eyebrow">Buổi 4 · AI Workshop</div>
+      <h2>4 ứng dụng AI trong học tập</h2>
+      <p class="section-intro">Áp dụng C.A.R.E và kỹ thuật kiểm chứng vào các tác vụ học tập thực tế.</p>
+
+      <div class="toolbox">
+        <div class="toolcard">
+          <h4><span class="glyph">▣</span> Ghi chú thông minh</h4>
+          <p>Dán transcript bài giảng vào AI, sau đó yêu cầu tạo mindmap, tóm tắt, và câu hỏi ôn tập.</p>
+        </div>
+        <div class="toolcard">
+          <h4><span class="glyph">◐</span> Học ngoại ngữ</h4>
+          <p>Dùng AI làm đối tác luyện hội thoại, sửa lỗi ngữ pháp, giải thích idiom.</p>
+        </div>
+        <div class="toolcard">
+          <h4><span class="glyph">▤</span> Làm slide</h4>
+          <p>Yêu cầu AI gợi ý cấu trúc slide và headline hấp dẫn cho từng phần thuyết trình.</p>
+          <div class="ex2">"Tôi cần thuyết trình về X trong 5 phút. Hãy gợi ý cấu trúc 5 slide với headline hấp dẫn cho từng slide."</div>
+        </div>
+        <div class="toolcard">
+          <h4><span class="glyph">✦</span> Brainstorm ý tưởng</h4>
+          <p>Yêu cầu AI gợi ý nhiều góc nhìn khác nhau cho một vấn đề nghiên cứu.</p>
+          <div class="ex2">"Tôi cần 10 góc độ khác nhau để nghiên cứu về vấn đề rác thải nhựa. Hãy gợi ý theo hướng càng sáng tạo càng tốt."</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLOSING -->
+  <section class="closing" style="border-top:1px solid var(--line);">
+    <div class="wrap">
+      <blockquote>"AI sẽ ngày càng thông minh hơn. Nhưng người nắm vững kỹ năng ra lệnh cho AI sẽ luôn là người dẫn đầu thế cuộc."</blockquote>
+      <div class="credit">SSA101 Course Project — Nhóm 6 Bông Hoa</div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Who Is The Prompt Master? · Cẩm nang học liệu số · Nhóm 6 Bông Hoa
+</footer>
+
+<script>
+  // C.A.R.E tabs
+  const tabs = document.querySelectorAll('.care-tab');
+  const panels = document.querySelectorAll('.care-panel');
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      panels.forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.querySelector('.care-panel[data-panel="' + tab.dataset.tab + '"]').classList.add('active');
+    });
+  });
+
+  // C.A.R.E live prompt builder
+  const fields = { context:'', action:'', result:'', example:'' };
+  const inputs = document.querySelectorAll('.care-input');
+  const output = document.getElementById('careOutput');
+
+  function renderOutput(){
+    const hasAny = Object.values(fields).some(v => v.trim().length > 0);
+    if(!hasAny){
+      output.innerHTML = '<span class="ph">Điền vào các ô Context / Action / Result / Example phía trên — prompt hoàn chỉnh sẽ hiện ra ở đây.</span>';
+      return;
+    }
+    const parts = [];
+    if(fields.context.trim()) parts.push('<span class="filled">' + escapeHtml(fields.context.trim()) + '</span>');
+    if(fields.action.trim()) parts.push('<span class="filled">' + escapeHtml(fields.action.trim()) + '</span>');
+    if(fields.result.trim()) parts.push('<span class="filled">' + escapeHtml(fields.result.trim()) + '</span>');
+    if(fields.example.trim()) parts.push('<span class="filled">Ví dụ: ' + escapeHtml(fields.example.trim()) + '</span>');
+    output.innerHTML = parts.join(' ');
+  }
+
+  function escapeHtml(str){
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  inputs.forEach(input => {
+    input.addEventListener('input', () => {
+      fields[input.dataset.field] = input.value;
+      renderOutput();
+    });
+  });
+
+  // Ethics accordion
+  document.querySelectorAll('.qa-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const expanded = btn.getAttribute('aria-expanded') === 'true';
+      const answer = btn.nextElementSibling;
+      // close all others
+      document.querySelectorAll('.qa-q').forEach(b => {
+        b.setAttribute('aria-expanded','false');
+        b.nextElementSibling.style.maxHeight = null;
+      });
+      if(!expanded){
+        btn.setAttribute('aria-expanded','true');
+        answer.style.maxHeight = answer.scrollHeight + 'px';
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
